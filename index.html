@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>8-Bit Logic Engine</title>
+    <title>8-Bit Logic Engine | CS & IT</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,8 +13,9 @@
     <style>
         :root {
             --bg-dark: #030303;
-            --glass-border: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.06);
             --glass-bg: rgba(255, 255, 255, 0.02);
+            --accent-glow: rgba(59, 130, 246, 0.15);
         }
 
         /* Strict Mobile Viewport & Gesture Blocking */
@@ -21,200 +23,184 @@
             background-color: var(--bg-dark);
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none; /* Blocks all native pinching/panning */
-            overscroll-behavior: none; /* Blocks pull-to-refresh */
+            touch-action: none; /* Blocks native pinching/panning */
+            overscroll-behavior: contain; /* Blocks pull-to-refresh */
             user-select: none;
             -webkit-user-select: none;
+            overflow: hidden;
         }
 
         .font-mono {
             font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
         }
 
-        /* Invisible Scrollbar for Overflow */
         ::-webkit-scrollbar { width: 0px; height: 0px; }
         
         /* Ambient Glow Meshes */
-        .ambient-mesh-top {
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, transparent 60%);
-            filter: blur(50px);
+        .ambient-mesh {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform, opacity;
         }
-        .ambient-mesh-br {
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 60%);
-            filter: blur(50px);
-        }
-        .ambient-mesh-bl {
-            background: radial-gradient(circle, rgba(225, 29, 72, 0.06) 0%, transparent 60%);
-            filter: blur(50px);
-        }
+        .mesh-top { top: -10%; left: 50%; transform: translateX(-50%); width: 80vw; height: 40vh; background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, transparent 60%); }
+        .mesh-br { bottom: -10%; right: -10%; width: 60vw; height: 40vh; background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 60%); }
+        .mesh-bl { bottom: -10%; left: -10%; width: 60vw; height: 40vh; background: radial-gradient(circle, rgba(225, 29, 72, 0.08) 0%, transparent 60%); }
 
         /* Premium Glassmorphism */
         .glass-card {
             background: var(--glass-bg);
-            backdrop-filter: blur(24px);
-            -webkit-backdrop-filter: blur(24px);
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
             border: 1px solid var(--glass-border);
-            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.9), 
-                        inset 0 1px 0 rgba(255, 255, 255, 0.06),
-                        inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.9), 
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                        inset 0 -1px 0 rgba(0, 0, 0, 0.6);
         }
 
         .display-screen {
-            background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
-            box-shadow: inset 0 4px 20px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 100%);
+            box-shadow: inset 0 4px 24px rgba(0,0,0,0.9), 0 1px 0 rgba(255,255,255,0.04);
             border: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        /* Hardware Accelerated Micro-Interactions */
+        /* Hardware Accelerated Buttons */
         .btn {
             will-change: transform, background-color;
             transform: translateZ(0);
             backface-visibility: hidden;
-            transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn:active {
-            transform: scale(0.92) translateZ(0);
-        }
-
-        /* Button Theming */
         .btn-num {
-            background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 4px 10px rgba(0,0,0,0.3);
+            background: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 4px 12px rgba(0,0,0,0.4);
         }
-        .btn-num:active { background: rgba(255, 255, 255, 0.1); }
 
         .btn-op {
-            background: linear-gradient(180deg, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.03) 100%);
+            background: linear-gradient(180deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.02) 100%);
             border: 1px solid rgba(59, 130, 246, 0.15);
             color: #60a5fa;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.4);
         }
-        .btn-op:active { background: rgba(59, 130, 246, 0.25); }
 
         .btn-action {
-            background: linear-gradient(180deg, rgba(244,63,94,0.12) 0%, rgba(244,63,94,0.03) 100%);
+            background: linear-gradient(180deg, rgba(244,63,94,0.1) 0%, rgba(244,63,94,0.02) 100%);
             border: 1px solid rgba(244, 63, 94, 0.15);
             color: #fb7185;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 4px 12px rgba(0,0,0,0.4);
         }
-        .btn-action:active { background: rgba(244, 63, 94, 0.25); }
 
         .btn-equals {
             background: linear-gradient(180deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%);
             border: 1px solid rgba(16, 185, 129, 0.25);
             color: #34d399;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 20px rgba(16, 185, 129, 0.1);
-        }
-        .btn-equals:active {
-            background: rgba(16, 185, 129, 0.3);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 0 30px rgba(16, 185, 129, 0.2);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 24px rgba(16, 185, 129, 0.15);
         }
 
-        /* Boot Sequence Animations */
-        @keyframes load-progress {
-            0% { width: 0%; }
-            30% { width: 45%; }
-            70% { width: 80%; }
-            100% { width: 100%; }
-        }
-        .animate-progress {
-            animation: load-progress 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
         .blink { animation: blinker 1s step-end infinite; }
         @keyframes blinker { 50% { opacity: 0; } }
     </style>
 </head>
-<body class="h-[100dvh] w-screen overflow-hidden flex items-center justify-center text-white relative">
+<body class="h-[100dvh] w-screen flex items-center justify-center text-white relative">
 
     <!-- Ambient Background Meshes -->
-    <div class="absolute top-[-5%] left-1/2 -translate-x-1/2 w-[100vw] h-[40vh] ambient-mesh-top pointer-events-none z-0"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-[70vw] h-[40vh] ambient-mesh-br pointer-events-none z-0"></div>
-    <div class="absolute bottom-[-10%] left-[-10%] w-[70vw] h-[40vh] ambient-mesh-bl pointer-events-none z-0"></div>
+    <div class="ambient-mesh mesh-top"></div>
+    <div class="ambient-mesh mesh-br"></div>
+    <div class="ambient-mesh mesh-bl"></div>
 
     <!-- ==========================================
-         BOOT SEQUENCE (MOBILE OPTIMIZED)
+         CINEMATIC BOOT SEQUENCE
          ========================================== -->
-    <div id="boot-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#030303] transition-opacity duration-700 px-4">
-        
-        <!-- Centered Terminal Block -->
-        <div class="w-full max-w-[280px] flex flex-col items-start font-mono text-[10px] sm:text-[11px] tracking-wider text-blue-400/80 space-y-3">
-            <div id="term-1" class="opacity-0 transition-opacity duration-150">[SYS] INITIALIZING CORE_LOGIC v2.0...</div>
-            <div id="term-2" class="opacity-0 transition-opacity duration-150">[OK] MAP_8BIT_REGISTERS</div>
-            <div id="term-3" class="opacity-0 transition-opacity duration-150">[OK] ALLOCATING LOGIC_GATES...</div>
-            <div id="term-4" class="opacity-0 transition-opacity duration-150 text-emerald-400">[SYS] READY<span class="blink">_</span></div>
+    <div id="boot-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#030303] px-6">
+        <div class="w-full max-w-[340px] flex flex-col items-start font-mono text-[11px] sm:text-xs tracking-wider text-blue-400/90 space-y-3">
+            <div class="term-line opacity-0 translate-y-2">[SYSTEM] ENGAGING STACK_V2...</div>
+            <div class="term-line opacity-0 translate-y-2">[OK] ALLOCATING 8-BIT SIGNED REGISTERS...</div>
+            <div class="term-line opacity-0 translate-y-2 text-emerald-400">[SYS] READY<span class="blink">_</span></div>
             
-            <!-- Cybernetic Progress Line -->
-            <div class="w-full h-[1px] bg-white/5 mt-4 relative overflow-hidden rounded-full">
-                <div class="absolute top-0 left-0 h-full bg-blue-500 animate-progress shadow-[0_0_8px_rgba(37,99,235,0.8)]"></div>
+            <!-- Fluid Accent Load Line -->
+            <div class="w-full h-[1px] bg-white/10 mt-6 relative overflow-hidden rounded-full">
+                <div id="load-line" class="absolute top-0 left-0 h-full w-full bg-blue-500 shadow-[0_0_12px_rgba(37,99,235,0.9)] origin-left scale-x-0"></div>
             </div>
-        </div>
 
-        <!-- Bottom Pinned Signature -->
-        <div class="absolute bottom-8 left-0 w-full text-white/30 text-[8px] sm:text-[9px] tracking-[0.2em] text-center font-sans px-4">
-            ENGINEERED BY DEPT. OF CS & IT // CLASS OF '28
+            <!-- Warm Student Greeting -->
+            <div id="greeting-text" class="pt-6 text-white/40 text-[9px] sm:text-[10px] tracking-[0.15em] text-center font-sans w-full opacity-0 translate-y-2 leading-relaxed">
+                WELCOME! PROUDLY DESIGNED & ENGINEERED BY<br>
+                <span class="text-white/70 font-medium">THE DEPT. OF CS & IT // 2ND YEAR STUDENTS</span>
+            </div>
         </div>
     </div>
 
     <!-- ==========================================
          MAIN CALCULATOR INTERFACE
          ========================================== -->
-    <div id="app-container" class="relative z-10 w-full max-w-[320px] flex flex-col gap-4 p-3 opacity-0 scale-95 transition-all duration-1000 ease-out">
+    <div id="app-container" class="relative z-10 w-full max-w-[340px] flex flex-col gap-4 p-4 opacity-0 scale-95 hidden">
         
         <!-- Header -->
         <div class="text-center px-1 flex justify-between items-end">
             <div class="text-left">
                 <h1 class="text-sm sm:text-base font-bold tracking-widest text-white/90 flex items-center gap-2 font-mono">
-                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.8)]"></div>
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(37,99,235,0.9)]"></div>
                     BIN<span class="text-blue-500">CALC</span>
                 </h1>
-                <p class="text-[8px] text-white/40 font-mono mt-1 tracking-[0.15em]">8-BIT LOGIC ENGINE</p>
+                <p class="text-[8px] sm:text-[9px] text-white/40 font-mono mt-1 tracking-[0.15em]">8-BIT LOGIC ENGINE</p>
             </div>
-            <div class="text-[8px] font-mono text-emerald-400/80 border border-emerald-400/20 px-2 py-1 rounded bg-emerald-400/5 tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.05)]">
+            <div class="text-[8px] sm:text-[9px] font-mono text-emerald-400/90 border border-emerald-400/20 px-2 py-1 rounded bg-emerald-400/10 tracking-wider shadow-[0_0_12px_rgba(16,185,129,0.1)]">
                 STRICT MODE
             </div>
         </div>
 
         <!-- Calculator Body -->
-        <div class="glass-card rounded-[2rem] p-4 flex flex-col gap-4">
+        <div class="glass-card rounded-[2rem] p-4 sm:p-5 flex flex-col gap-4 sm:gap-5">
             
             <!-- Display Area -->
-            <div class="display-screen w-full h-28 rounded-2xl p-3 flex flex-col relative overflow-hidden">
-                <!-- History Log -->
-                <div id="history" class="flex-1 overflow-y-auto text-right text-[10px] text-white/30 font-mono space-y-1 pb-1 flex flex-col justify-end scroll-smooth">
-                    <!-- History injected via JS -->
+            <div class="display-screen w-full h-32 rounded-2xl p-4 flex flex-col relative overflow-hidden justify-between">
+                
+                <!-- History / Calculated Result -->
+                <div class="flex flex-col items-end w-full">
+                    <div class="text-[9px] text-white/30 uppercase tracking-widest font-sans mb-1">Calculated Result</div>
+                    <div id="history" class="w-full overflow-x-auto text-right text-[11px] text-white/50 font-mono whitespace-nowrap scroll-smooth">
+                        --
+                    </div>
                 </div>
                 
-                <!-- Current Input -->
-                <div id="display" class="w-full overflow-x-auto text-right text-4xl font-mono tracking-tight text-white whitespace-nowrap pb-1 scroll-smooth mt-1">
-                    0
+                <!-- Current Input / Expression -->
+                <div class="flex flex-col items-end w-full mt-1">
+                    <div id="input-label" class="text-[9px] text-blue-400/60 uppercase tracking-widest font-sans mb-1 transition-colors">Awaiting Binary Input</div>
+                    <div id="display" class="w-full overflow-x-auto text-right text-4xl font-mono tracking-tight text-white whitespace-nowrap pb-1 scroll-smooth will-change-transform">
+                        0
+                    </div>
                 </div>
 
-                <!-- Real-Time Decimal Indicator -->
-                <div class="absolute bottom-2.5 left-3 text-[9px] font-mono text-blue-400/70 tracking-wider flex items-center gap-1.5">
-                    <span class="w-1 h-1 bg-blue-400/70 rounded-full"></span>
-                    <span id="dec-indicator">[DEC: 0]</span>
+                <!-- Real-Time Status / Decimal Indicator -->
+                <div class="absolute bottom-3 left-4 text-[9px] font-mono text-white/40 tracking-wider flex items-center gap-1.5">
+                    <span id="status-dot" class="w-1.5 h-1.5 bg-emerald-500/80 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
+                    <span id="status-label">System Operational</span>
                 </div>
             </div>
 
-            <!-- Keypad Grid (Mobile Ergonomic Thumb Grid) -->
-            <div class="grid grid-cols-4 gap-2.5">
+            <!-- Keypad Grid (Ergonomic Thumb Grid) -->
+            <div class="grid grid-cols-4 gap-2.5 sm:gap-3">
                 
                 <!-- Row 1: Actions -->
-                <button class="btn btn-action col-span-2 rounded-2xl text-lg font-semibold flex items-center justify-center h-14 w-full font-sans" onclick="handleInput('C')">C</button>
-                <button class="btn btn-action col-span-2 rounded-2xl text-xl font-semibold flex items-center justify-center h-14 w-full font-sans" onclick="handleInput('⌫')">⌫</button>
+                <button class="btn btn-action col-span-2 rounded-2xl text-lg font-semibold flex items-center justify-center h-14 sm:h-16 w-full font-sans" onclick="handleInput('C')">C</button>
+                <button class="btn btn-action col-span-2 rounded-2xl text-xl font-semibold flex items-center justify-center h-14 sm:h-16 w-full font-sans" onclick="handleInput('⌫')">⌫</button>
                 
                 <!-- Row 2: Numbers -->
-                <button class="btn btn-num col-span-2 rounded-2xl text-3xl font-mono text-white flex items-center justify-center h-14 w-full" onclick="handleInput('1')">1</button>
-                <button class="btn btn-num col-span-2 rounded-2xl text-3xl font-mono text-white flex items-center justify-center h-14 w-full" onclick="handleInput('0')">0</button>
+                <button class="btn btn-num col-span-2 rounded-2xl text-3xl font-mono text-white flex items-center justify-center h-14 sm:h-16 w-full" onclick="handleInput('1')">1</button>
+                <button class="btn btn-num col-span-2 rounded-2xl text-3xl font-mono text-white flex items-center justify-center h-14 sm:h-16 w-full" onclick="handleInput('0')">0</button>
                 
-                <!-- Row 3: Operators -->
-                <button class="btn btn-op col-span-2 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 w-full" onclick="handleInput('+')">+</button>
-                <button class="btn btn-op col-span-2 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 w-full" onclick="handleInput('-')">-</button>
+                <!-- Row 3: Operators (+, -) -->
+                <button class="btn btn-op col-span-2 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 sm:h-16 w-full" onclick="handleInput('+')">+</button>
+                <button class="btn btn-op col-span-2 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 sm:h-16 w-full" onclick="handleInput('-')">-</button>
                 
-                <!-- Row 4: Equals -->
-                <button class="btn btn-equals col-span-4 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 w-full" onclick="handleInput('=')">=</button>
+                <!-- Row 4: Multiply & Equals -->
+                <button class="btn btn-op col-span-2 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 sm:h-16 w-full" onclick="handleInput('×')">×</button>
+                <button class="btn btn-equals col-span-2 rounded-2xl text-3xl font-mono flex items-center justify-center pb-1 h-14 sm:h-16 w-full" onclick="handleInput('=')">=</button>
                 
             </div>
         </div>
@@ -222,101 +208,286 @@
 
     <script>
         // ==========================================
-        // BOOT SEQUENCE LOGIC (Strict 2.5s)
+        // GSAP BOOT SEQUENCE & ANIMATIONS
         // ==========================================
-        window.addEventListener('DOMContentLoaded', () => {
-            const bootScreen = document.getElementById('boot-screen');
-            const appContainer = document.getElementById('app-container');
+        document.addEventListener("DOMContentLoaded", () => {
+            const tl = gsap.timeline();
             
-            setTimeout(() => document.getElementById('term-1').classList.remove('opacity-0'), 200);
-            setTimeout(() => document.getElementById('term-2').classList.remove('opacity-0'), 800);
-            setTimeout(() => document.getElementById('term-3').classList.remove('opacity-0'), 1400);
-            setTimeout(() => document.getElementById('term-4').classList.remove('opacity-0'), 2000);
-            
-            setTimeout(() => {
-                bootScreen.classList.add('opacity-0', 'pointer-events-none');
-                appContainer.classList.remove('opacity-0', 'scale-95');
-            }, 2500);
+            // Terminal Typing Stagger
+            tl.to(".term-line", {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                stagger: 0.3,
+                ease: "power2.out",
+                delay: 0.2
+            })
+            // Load Line Expansion
+            .to("#load-line", {
+                scaleX: 1,
+                duration: 1.2,
+                ease: "power4.inOut"
+            }, "-=0.2")
+            // Greeting Fade In
+            .to("#greeting-text", {
+                opacity: 1,
+                y: 0,
+                duration: 0.5,
+                ease: "power2.out"
+            }, "-=0.6")
+            // Hold for reading (Total sequence ~2.8s)
+            .to("#boot-screen", {
+                scale: 1.05,
+                opacity: 0,
+                duration: 0.6,
+                ease: "power2.inOut",
+                delay: 0.8,
+                onComplete: () => {
+                    document.getElementById('boot-screen').style.display = 'none';
+                    document.getElementById('app-container').classList.remove('hidden');
+                }
+            })
+            // App Chassis Slide In
+            .fromTo("#app-container", 
+                { y: 30, opacity: 0, scale: 0.96 }, 
+                { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.2)" }, 
+                "-=0.2"
+            );
         });
 
+        // Button Press Micro-Interaction
+        function animateButton(btnEl) {
+            // Scale pop
+            gsap.fromTo(btnEl, 
+                { scale: 0.93 }, 
+                { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.5)" }
+            );
+            // Color bloom
+            gsap.fromTo(btnEl,
+                { backgroundColor: "rgba(255,255,255,0.15)" },
+                { backgroundColor: "transparent", duration: 0.4, clearProps: "backgroundColor" }
+            );
+        }
+
+        // Display Text Update Animation
+        function animateDisplayUpdate() {
+            gsap.fromTo("#display", 
+                { y: 5, opacity: 0.5 }, 
+                { y: 0, opacity: 1, duration: 0.2, ease: "power2.out" }
+            );
+        }
+
         // ==========================================
-        // CALCULATOR STATE & LOGIC ENGINE
+        // PURE BINARY LOGIC ENGINE (8-BIT SIGNED)
+        // ==========================================
+        
+        // 1. Binary Addition (Bit-by-Bit)
+        function add8Bit(a, b) {
+            let carry = 0;
+            let result = '';
+            for (let i = 7; i >= 0; i--) {
+                let sum = parseInt(a[i]) + parseInt(b[i]) + carry;
+                result = (sum % 2) + result;
+                carry = Math.floor(sum / 2);
+            }
+            // Overflow in signed 8-bit: if operands have same sign, but result has different sign
+            let overflow = (a[0] === b[0]) && (result[0] !== a[0]);
+            return { result, overflow };
+        }
+
+        // 2. Two's Complement (Invert + 1)
+        function twosComplement(bin) {
+            let inverted = bin.split('').map(b => b === '0' ? '1' : '0').join('');
+            return add8Bit(inverted, '00000001').result;
+        }
+
+        // 3. Binary Subtraction (a + (-b))
+        function subtract8Bit(a, b) {
+            let negB = twosComplement(b);
+            let res = add8Bit(a, negB);
+            // Overflow: if operands have DIFFERENT signs, and result sign differs from 'a'
+            let overflow = (a[0] !== b[0]) && (res.result[0] !== a[0]);
+            return { result: res.result, overflow };
+        }
+
+        // 4. Binary Multiplication (Shift and Add)
+        function multiply8Bit(a, b) {
+            let signA = a[0];
+            let signB = b[0];
+            
+            let absA = signA === '1' ? twosComplement(a) : a;
+            let absB = signB === '1' ? twosComplement(b) : b;
+
+            let result = '00000000';
+            let overflow = false;
+
+            for (let i = 7; i >= 0; i--) {
+                if (absB[i] === '1') {
+                    let shiftAmount = 7 - i;
+                    let shifted = absA.substring(shiftAmount) + '0'.repeat(shiftAmount);
+                    // If we shift out any 1s, it exceeds 8-bit magnitude
+                    if (absA.substring(0, shiftAmount).includes('1')) overflow = true;
+                    
+                    let addRes = add8Bit(result, shifted);
+                    result = addRes.result;
+                    if (addRes.overflow) overflow = true;
+                }
+            }
+
+            // Apply sign
+            if (signA !== signB) {
+                result = twosComplement(result);
+                // Negative result must have MSB=1 (unless it's 0)
+                if (result !== '00000000' && result[0] === '0') overflow = true;
+            } else {
+                // Positive result must have MSB=0
+                if (result[0] === '1') overflow = true;
+            }
+
+            return { result, overflow };
+        }
+
+        // 5. Format Converters
+        function to8Bit(str) {
+            let isNegative = str.startsWith('-');
+            let bin = isNegative ? str.substring(1) : str;
+            bin = bin.padStart(8, '0');
+            if (isNegative) return twosComplement(bin);
+            return bin;
+        }
+
+        function from8Bit(str) {
+            if (str[0] === '1') {
+                let minusOne = add8Bit(str, '11111111').result;
+                let inverted = minusOne.split('').map(b => b === '0' ? '1' : '0').join('');
+                let mag = inverted.replace(/^0+/, '');
+                return '-' + (mag === '' ? '0' : mag);
+            } else {
+                let mag = str.replace(/^0+/, '');
+                return mag === '' ? '0' : mag;
+            }
+        }
+
+        // ==========================================
+        // CALCULATOR STATE & PARSER
         // ==========================================
         let currentExpression = "";
-        let historyLog = [];
+        let lastResult = "";
         let justCalculated = false;
 
         const displayEl = document.getElementById('display');
         const historyEl = document.getElementById('history');
-        const decIndicatorEl = document.getElementById('dec-indicator');
+        const statusLabelEl = document.getElementById('status-label');
+        const statusDotEl = document.getElementById('status-dot');
+        const inputLabelEl = document.getElementById('input-label');
 
-        // Web Haptics Engine (Tactile Vibe)
         function triggerHaptic(type) {
             if (!navigator.vibrate) return;
             try {
-                if (type === 'bit') navigator.vibrate(12);
+                if (type === 'num') navigator.vibrate(12);
                 if (type === 'op') navigator.vibrate(25);
                 if (type === 'calc') navigator.vibrate([20, 30, 20]);
                 if (type === 'err') navigator.vibrate([50, 50, 50]);
             } catch (e) {} 
         }
 
-        /**
-         * Evaluates the binary expression to a decimal integer.
-         * Strictly enforces 8-bit Two's Complement boundaries (-128 to 127).
-         */
-        function evaluateToDecimal(expression) {
-            if (!expression || expression === "[OVERFLOW_ERR]") return null;
+        function evaluateExpression(expr) {
+            if (!expr || expr === "[OVERFLOW_ERR]") return null;
+            
+            let tokens = [];
+            let current = "";
+            for (let i = 0; i < expr.length; i++) {
+                let char = expr[i];
+                if (char === '+' || char === '-' || char === '×') {
+                    if (i === 0 && char === '-') {
+                        current += char;
+                    } else {
+                        if (current) tokens.push(current);
+                        tokens.push(char);
+                        current = "";
+                    }
+                } else {
+                    current += char;
+                }
+            }
+            if (current) tokens.push(current);
 
-            let tokens = expression.match(/(\d+|[+-])/g);
-            if (!tokens) return null;
-
-            if (tokens[0] === '-') {
-                tokens.shift();
-                if (tokens.length > 0) tokens[0] = '-' + tokens[0];
-            } else if (tokens[0] === '+') {
-                tokens.shift();
+            // Convert to 8-bit registers
+            for (let i = 0; i < tokens.length; i++) {
+                if (i % 2 === 0) {
+                    // Pre-check magnitude before conversion
+                    let dec = parseInt(tokens[i], 2);
+                    if (dec < -128 || dec > 127) return "[OVERFLOW_ERR]";
+                    tokens[i] = to8Bit(tokens[i]);
+                }
             }
 
-            if (tokens.length === 0) return null;
+            // Order of Operations: Multiply first
+            let i = 1;
+            while (i < tokens.length) {
+                if (tokens[i] === '×') {
+                    let res = multiply8Bit(tokens[i-1], tokens[i+1]);
+                    if (res.overflow) return "[OVERFLOW_ERR]";
+                    tokens.splice(i-1, 3, res.result);
+                } else {
+                    i += 2;
+                }
+            }
 
-            let result = parseInt(tokens[0], 2);
-            if (isNaN(result)) return null;
-
-            for (let i = 1; i < tokens.length; i += 2) {
-                const operator = tokens[i];
-                const nextNum = parseInt(tokens[i + 1], 2);
+            // Then Add/Subtract
+            i = 1;
+            while (i < tokens.length) {
+                let op = tokens[i];
+                let res;
+                if (op === '+') res = add8Bit(tokens[i-1], tokens[i+1]);
+                else if (op === '-') res = subtract8Bit(tokens[i-1], tokens[i+1]);
                 
-                if (isNaN(nextNum)) break; 
-
-                if (operator === '+') result += nextNum;
-                if (operator === '-') result -= nextNum;
+                if (res.overflow) return "[OVERFLOW_ERR]";
+                tokens.splice(i-1, 3, res.result);
             }
 
-            return result;
+            return from8Bit(tokens[0]);
         }
 
-        // UI Updates
-        function updateDisplay() {
+        function updateUI() {
             displayEl.innerText = currentExpression || "0";
             
+            if (currentExpression === "") {
+                inputLabelEl.innerText = "Awaiting Binary Input";
+                inputLabelEl.classList.replace('text-white/60', 'text-blue-400/60');
+            } else {
+                inputLabelEl.innerText = "Your Expression";
+                inputLabelEl.classList.replace('text-blue-400/60', 'text-white/60');
+            }
+
             if (currentExpression === "[OVERFLOW_ERR]") {
-                decIndicatorEl.innerHTML = `<span class="text-rose-400">[ERR: LIMIT_EXCEEDED]</span>`;
+                statusLabelEl.innerHTML = `<span class="text-rose-400">System Failure: Bounds Exceeded</span>`;
+                statusDotEl.className = "w-1.5 h-1.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(225,29,72,0.8)]";
                 displayEl.classList.add('text-rose-400');
                 displayEl.classList.remove('text-white');
             } else {
                 displayEl.classList.remove('text-rose-400');
                 displayEl.classList.add('text-white');
                 
-                const decValue = evaluateToDecimal(currentExpression);
-                if (decValue !== null) {
-                    if (decValue < -128 || decValue > 127) {
-                        decIndicatorEl.innerHTML = `<span class="text-rose-400">[DEC: OVERFLOW]</span>`;
-                    } else {
-                        decIndicatorEl.innerText = `[DEC: ${decValue}]`;
-                    }
+                // Calculate real-time decimal
+                let cleanExpr = currentExpression;
+                if (['+', '-', '×'].includes(cleanExpr.slice(-1))) {
+                    cleanExpr = cleanExpr.slice(0, -1);
+                }
+                
+                if (!cleanExpr || cleanExpr === "-") {
+                    statusLabelEl.innerText = "System Operational";
+                    statusDotEl.className = "w-1.5 h-1.5 bg-emerald-500/80 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.6)]";
                 } else {
-                    decIndicatorEl.innerText = `[DEC: 0]`;
+                    let binResult = evaluateExpression(cleanExpr);
+                    if (binResult === "[OVERFLOW_ERR]") {
+                        statusLabelEl.innerHTML = `<span class="text-rose-400">Warning: Imminent Overflow</span>`;
+                        statusDotEl.className = "w-1.5 h-1.5 bg-rose-500 rounded-full shadow-[0_0_8px_rgba(225,29,72,0.8)]";
+                    } else {
+                        let decValue = parseInt(binResult, 2);
+                        statusLabelEl.innerText = `[DEC: ${decValue}]`;
+                        statusDotEl.className = "w-1.5 h-1.5 bg-blue-500/80 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]";
+                    }
                 }
             }
 
@@ -325,23 +496,20 @@
             });
         }
 
-        function updateHistoryUI() {
-            historyEl.innerHTML = historyLog.map(item => 
-                `<div class="opacity-50 hover:opacity-100 transition-opacity duration-200">${item}</div>`
-            ).join('');
-            requestAnimationFrame(() => {
-                historyEl.scrollTop = historyEl.scrollHeight;
-            });
-        }
-
-        // Input Handler
         function handleInput(key) {
-            const operators = ['+', '-'];
+            // Find the button element for GSAP animation
+            const btnEl = Array.from(document.querySelectorAll('button')).find(b => b.innerText === key);
+            if (btnEl) animateButton(btnEl);
+
+            const operators = ['+', '-', '×'];
             
             if (currentExpression === "[OVERFLOW_ERR]") {
                 currentExpression = "";
                 justCalculated = false;
-                if (key === '=' || key === '⌫') return;
+                if (key === '=' || key === '⌫') {
+                    updateUI();
+                    return;
+                }
             }
 
             const lastChar = currentExpression.slice(-1);
@@ -349,6 +517,7 @@
             if (key === 'C') {
                 triggerHaptic('calc');
                 currentExpression = "";
+                historyEl.innerText = "--";
                 justCalculated = false;
             } 
             else if (key === '⌫') {
@@ -364,25 +533,16 @@
             else if (key === '=') {
                 if (!currentExpression || operators.includes(lastChar)) return;
 
-                const decResult = evaluateToDecimal(currentExpression);
-                if (decResult === null) return;
+                let finalBinary = evaluateExpression(currentExpression);
+                if (finalBinary === null) return;
 
-                let finalBinary = "";
-                
-                if (decResult < -128 || decResult > 127) {
+                if (finalBinary === "[OVERFLOW_ERR]") {
                     triggerHaptic('err');
-                    finalBinary = "[OVERFLOW_ERR]";
                 } else {
                     triggerHaptic('calc');
-                    finalBinary = decResult < 0 
-                        ? "-" + Math.abs(decResult).toString(2) 
-                        : decResult.toString(2);
                 }
                 
-                historyLog.push(`${currentExpression} = <span class="text-white/90">${finalBinary}</span>`);
-                if (historyLog.length > 3) historyLog.shift(); 
-                
-                updateHistoryUI();
+                historyEl.innerHTML = `${currentExpression} = <span class="text-white/90">${finalBinary}</span>`;
                 currentExpression = finalBinary;
                 justCalculated = true;
             } 
@@ -392,7 +552,8 @@
                 
                 if (currentExpression === "" && key === '-') {
                     currentExpression = "-";
-                    updateDisplay();
+                    animateDisplayUpdate();
+                    updateUI();
                     return;
                 }
                 if (currentExpression === "" || currentExpression === "-") return;
@@ -404,12 +565,12 @@
                 }
             } 
             else if (key === '1' || key === '0') {
+                triggerHaptic('num');
                 if (justCalculated) {
                     currentExpression = key;
                     justCalculated = false;
-                    triggerHaptic('bit');
                 } else {
-                    const segments = currentExpression.split(/[+-]/);
+                    const segments = currentExpression.split(/[+\-×]/);
                     const currentSegment = segments[segments.length - 1];
                     
                     if (currentSegment.length >= 8) {
@@ -417,7 +578,6 @@
                         return; 
                     }
 
-                    triggerHaptic('bit');
                     if (currentSegment === "0" && key === "0") {
                         return; 
                     } else if (currentSegment === "0" && key === "1") {
@@ -428,13 +588,16 @@
                 }
             }
 
-            updateDisplay();
+            animateDisplayUpdate();
+            updateUI();
         }
 
         // Keyboard Support
         document.addEventListener('keydown', (e) => {
-            const key = e.key;
-            if (['0', '1', '+', '-'].includes(key)) {
+            let key = e.key;
+            if (key === '*') key = '×';
+            
+            if (['0', '1', '+', '-', '×'].includes(key)) {
                 e.preventDefault();
                 handleInput(key);
             }
