@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Binary Logic Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(255, 255, 255, 0.03);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 255, 255, 0.03), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.04), transparent 25%);
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+        /* Glassmorphism Utilities */
+        .glass-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .display-screen {
+            background: linear-gradient(180deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Hardware Accelerated Buttons */
+        .btn {
+            will-change: transform;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn:active {
+            transform: scale(0.95) translateZ(0);
+        }
+
+        .btn-num {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .btn-num:hover { background: rgba(255, 255, 255, 0.08); }
+
+        .btn-op {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+        .btn-op:hover { background: rgba(59, 130, 246, 0.15); }
+
+        .btn-action {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            color: #fb7185;
+        }
+        .btn-action:hover { background: rgba(244, 63, 94, 0.15); }
+
+        .btn-equals {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #34d399;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+        }
+        .btn-equals:hover {
+            background: rgba(16, 185, 129, 0.25);
+            box-shadow: 0 0 25px rgba(16, 185, 129, 0.2);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex items-center justify-center text-white selection:bg-blue-500/30">
+
+    <!-- Main Wrapper -->
+    <div class="w-full max-w-sm p-4 flex flex-col gap-5 h-full max-h-[800px]">
+        
+        <!-- Header -->
+        <div class="text-center px-2 flex justify-between items-end">
+            <div class="text-left">
+                <h1 class="text-xl font-bold tracking-wider text-white/90 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                    BIN<span class="text-blue-500">CALC</span>
+                </h1>
+                <p class="text-[10px] text-white/40 font-mono mt-1 tracking-widest">8-BIT LOGIC ENGINE</p>
+            </div>
+            <div class="text-[10px] font-mono text-white/30 border border-white/10 px-2 py-1 rounded-md bg-white/5">
+                STRICT MODE
+            </div>
+        </div>
+
+        <!-- Calculator Interface -->
+        <div class="glass-container rounded-[2rem] p-5 flex flex-col gap-5 flex-1">
+            
+            <!-- Display Area -->
+            <div class="display-screen w-full h-36 rounded-2xl p-4 flex flex-col relative overflow-hidden">
+                <!-- History Log -->
+                <div id="history" class="flex-1 overflow-y-auto text-right text-xs text-white/40 font-mono space-y-1.5 pb-2 flex flex-col justify-end scroll-smooth">
+                    <!-- History items injected via JS -->
+                </div>
+                <!-- Current Input -->
+                <div id="display" class="w-full overflow-x-auto text-right text-5xl font-mono tracking-tight text-white whitespace-nowrap pb-1 scroll-smooth mt-1">
+                    0
+                </div>
+            </div>
+
+            <!-- Keypad Grid (Mobile-First 4-Cols) -->
+            <div class="grid grid-cols-4 gap-3 flex-1 auto-rows-fr">
+                
+                <!-- Row 1: Actions -->
+                <button class="btn btn-action col-span-2 rounded-2xl text-xl font-semibold flex items-center justify-center" onclick="handleInput('C')">C</button>
+                <button class="btn btn-action col-span-2 rounded-2xl text-xl font-semibold flex items-center justify-center" onclick="handleInput('⌫')">⌫</button>
+                
+                <!-- Row 2: Numbers -->
+                <button class="btn btn-num col-span-2 rounded-2xl text-4xl font-mono text-white flex items-center justify-center" onclick="handleInput('1')">1</button>
+                <button class="btn btn-num col-span-2 rounded-2xl text-4xl font-mono text-white flex items-center justify-center" onclick="handleInput('0')">0</button>
+                
+                <!-- Row 3: Operators -->
+                <button class="btn btn-op col-span-2 rounded-2xl text-4xl font-mono flex items-center justify-center pb-1" onclick="handleInput('+')">+</button>
+                <button class="btn btn-op col-span-2 rounded-2xl text-4xl font-mono flex items-center justify-center pb-1" onclick="handleInput('-')">-</button>
+                
+                <!-- Row 4: Equals -->
+                <button class="btn btn-equals col-span-4 rounded-2xl text-4xl font-mono flex items-center justify-center pb-1" onclick="handleInput('=')">=</button>
+                
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let currentExpression = "";
+        let historyLog = [];
+        let justCalculated = false;
+
+        // DOM Elements
+        const displayEl = document.getElementById('display');
+        const historyEl = document.getElementById('history');
+
+        /**
+         * Core Binary Logic Engine
+         * Converts binary strings to integers, calculates, and returns binary string.
+         * Strictly avoids eval() and handles carry/borrow logic natively via base-2 parsing.
+         */
+        function calculateBinary(expression) {
+            if (!expression) return "";
+
+            // Custom Tokenizer to handle negative numbers and operators safely
+            let tokens = [];
+            let currentNum = "";
+            
+            for (let i = 0; i < expression.length; i++) {
+                const char = expression[i];
+                if (char === '+' || char === '-') {
+                    // Handle negative numbers at the start of the expression
+                    if (i === 0 && char === '-') {
+                        currentNum += char;
+                    } else {
+                        if (currentNum !== "") {
+                            tokens.push(currentNum);
+                            currentNum = "";
+                        }
+                        tokens.push(char);
+                    }
+                } else {
+                    currentNum += char;
+                }
+            }
+            if (currentNum !== "") tokens.push(currentNum);
+            if (tokens.length === 0) return "";
+
+            // Ignore trailing operator
+            if (tokens[tokens.length - 1] === '+' || tokens[tokens.length - 1] === '-') {
+                tokens.pop();
+            }
+
+            // Parse base-2 string to integer (handles negative binary strings natively in JS)
+            let result = parseInt(tokens[0], 2);
+            if (isNaN(result)) return "";
+
+            // Sequential evaluation of operations
+            for (let i = 1; i < tokens.length; i += 2) {
+                const operator = tokens[i];
+                const nextNum = parseInt(tokens[i + 1], 2);
+                
+                if (isNaN(nextNum)) break;
+
+                if (operator === '+') {
+                    result += nextNum;
+                } else if (operator === '-') {
+                    result -= nextNum;
+                }
+            }
+
+            // Convert integer back to binary string, preserving negative sign if applicable
+            if (result < 0) {
+                return "-" + Math.abs(result).toString(2);
+            }
+            return result.toString(2);
+        }
+
+        // UI Updates
+        function updateDisplay() {
+            displayEl.innerText = currentExpression || "0";
+            // Hardware-accelerated scroll update
+            requestAnimationFrame(() => {
+                displayEl.scrollLeft = displayEl.scrollWidth;
+            });
+        }
+
+        function updateHistoryUI() {
+            historyEl.innerHTML = historyLog.map(item => 
+                `<div class="opacity-70 hover:opacity-100 transition-opacity duration-200">${item}</div>`
+            ).join('');
+            requestAnimationFrame(() => {
+                historyEl.scrollTop = historyEl.scrollHeight;
+            });
+        }
+
+        // Input Handler
+        function handleInput(key) {
+            const operators = ['+', '-'];
+            const lastChar = currentExpression.slice(-1);
+
+            if (key === 'C') {
+                currentExpression = "";
+                justCalculated = false;
+            } 
+            else if (key === '⌫') {
+                if (justCalculated) {
+                    currentExpression = "";
+                    justCalculated = false;
+                } else {
+                    currentExpression = currentExpression.slice(0, -1);
+                    // Clear dangling minus sign
+                    if (currentExpression === "-") currentExpression = "";
+                }
+            } 
+            else if (key === '=') {
+                if (!currentExpression || operators.includes(lastChar)) return;
+
+                const result = calculateBinary(currentExpression);
+                if (result === "" || result === "NaN") return;
+                
+                // Update History
+                historyLog.push(`${currentExpression} = <span class="text-white/80">${result}</span>`);
+                if (historyLog.length > 8) historyLog.shift(); // Keep log clean
+                
+                updateHistoryUI();
+                currentExpression = result;
+                justCalculated = true;
+            } 
+            else if (operators.includes(key)) {
+                justCalculated = false;
+                if (currentExpression === "") return;
+                
+                // Replace operator if one already exists at the end
+                if (operators.includes(lastChar)) {
+                    currentExpression = currentExpression.slice(0, -1) + key;
+                } else {
+                    currentExpression += key;
+                }
+            } 
+            else if (key === '1' || key === '0') {
+                if (justCalculated) {
+                    currentExpression = key;
+                    justCalculated = false;
+                } else {
+                    // Prevent multiple leading zeros in a single binary segment
+                    const segments = currentExpression.split(/[+-]/);
+                    const currentSegment = segments[segments.length - 1];
+                    
+                    if (currentSegment === "0" && key === "0") {
+                        return; // Ignore extra zero
+                    } else if (currentSegment === "0" && key === "1") {
+                        // Replace leading zero with 1
+                        currentExpression = currentExpression.slice(0, -1) + "1";
+                    } else {
+                        currentExpression += key;
+                    }
+                }
+            }
+
+            updateDisplay();
+        }
+
+        // Keyboard Support for Desktop Users
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            if (['0', '1', '+', '-'].includes(key)) {
+                e.preventDefault();
+                handleInput(key);
+            }
+            if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                handleInput('=');
+            }
+            if (key === 'Backspace') {
+                e.preventDefault();
+                handleInput('⌫');
+            }
+            if (key.toLowerCase() === 'c' || key === 'Escape') {
+                e.preventDefault();
+                handleInput('C');
+            }
+        });
+    </script>
+</body>
+</html>
